@@ -78,17 +78,18 @@ module GoogleDrive
     # +client_options+ and +request_options+. Unlike in from_config, these
     # are passed as positional arguments.
     def self.from_service_account_key(
-        json_key_path_or_io, scope = DEFAULT_SCOPE, client_options = nil,
+        json_key_path_or_io, scope = DEFAULT_SCOPE, impersonate = nil, client_options = nil,
         request_options = nil
     )
       if json_key_path_or_io.is_a?(String)
         open(json_key_path_or_io) do |f|
-          from_service_account_key(f, scope, client_options, request_options)
+          from_service_account_key(f, scope, impersonate, client_options, request_options)
         end
       else
         credentials = Google::Auth::ServiceAccountCredentials.make_creds(
           json_key_io: json_key_path_or_io, scope: scope
         )
+        credentials.sub = impersonate
         Session.new(credentials, nil, client_options, request_options)
       end
     end
@@ -411,7 +412,9 @@ module GoogleDrive
 
     # Returns the root folder.
     def root_collection
-      @root_collection ||= file_by_id('root')
+      @root_collection ||= drive.authorization.is_a?(Google::Auth::ServiceAccountCredentials) ?
+                             Collection.new(self, nil) :
+                             file_by_id('root')
     end
 
     alias root_folder root_collection
