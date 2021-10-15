@@ -191,11 +191,12 @@ module GoogleDrive
 
     def files_with_type(type, params = {}, &block)
       params = convert_params(params)
-      query  = construct_and_query([
-                                     ['? in parents', id],
-                                     type ? ['mimeType = ?', type] : nil,
-                                     params[:q]
-                                   ])
+      query_arguments = [
+        type ? ['mimeType = ?', type] : nil,
+        params[:q]
+      ]
+      query_arguments.prepend ['? in parents', id] if (defined? id)
+      query  = construct_and_query(query_arguments)
       params = params.merge(q: query)
       # This is faster than calling children.list and then files.get for each
       # file.
